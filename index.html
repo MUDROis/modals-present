@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modal Quest - Difficulty Levels</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', 'Quicksand', sans-serif;
+            background: linear-gradient(135deg, #FFF8F0 0%, #FFE5D0 50%, #FFD4B8 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .game-container {
+            background: #FFF;
+            border-radius: 30px;
+            box-shadow: 0 10px 40px rgba(226, 138, 101, 0.2);
+            max-width: 600px;
+            width: 100%;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        .game-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 8px;
+            background: linear-gradient(90deg, #E28A65, #F4A47C, #E28A65);
+        }
+        .progress-path {
+            position: absolute; top: 20px; right: 20px;
+            width: 120px; height: 60px;
+        }
+        .progress-svg { width: 100%; height: 100%; filter: drop-shadow(0 2px 4px rgba(226, 138, 101, 0.3)); }
+        .progress-path-line { fill: none; stroke: #FFE5D0; stroke-width: 8; stroke-linecap: round; }
+        .progress-path-fill { fill: none; stroke: url(#gradient); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 283; stroke-dashoffset: 283; transition: stroke-dashoffset 0.5s ease; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #FFF5ED; flex-wrap: wrap; gap: 10px; }
+        .logo { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #E28A65, #D4756C); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 10px; }
+        .stats { display: flex; gap: 10px; align-items: center; }
+        .stat-item { background: linear-gradient(135deg, #FFF5ED, #FFE5D0); padding: 8px 15px; border-radius: 20px; display: flex; align-items: center; gap: 5px; font-weight: 700; color: #E28A65; font-size: 14px; }
+        .avatar-container { text-align: center; margin-bottom: 25px; }
+        .avatar { width: 120px; height: 120px; background: linear-gradient(135deg, #F4A47C, #E28A65); border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 60px; box-shadow: 0 5px 20px rgba(226, 138, 101, 0.3); position: relative; overflow: hidden; }
+        .avatar-name { color: #8B6F5C; font-weight: 700; font-size: 18px; }
+        .question-card { background: linear-gradient(135deg, #FFF9F5, #FFF5ED); border-radius: 20px; padding: 25px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(226, 138, 101, 0.1); }
+        .question-type { display: inline-block; background: linear-gradient(135deg, #E28A65, #D4756C); color: white; padding: 5px 15px; border-radius: 15px; font-size: 12px; font-weight: 700; margin-bottom: 15px; text-transform: uppercase; }
+        .question-text { font-size: 20px; color: #5A4A42; font-weight: 700; margin-bottom: 10px; line-height: 1.4; }
+        .question-context { color: #8B6F5C; font-size: 14px; margin-bottom: 15px; font-style: italic; }
+        .sentence-box { background: white; padding: 15px; border-radius: 12px; font-size: 18px; color: #5A4A42; margin: 15px 0; border-left: 4px solid #E28A65; line-height: 1.6; }
+        .answers-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .answer-btn { background: linear-gradient(135deg, #FFF5ED, #FFE5D0); border: 3px solid transparent; padding: 18px; border-radius: 15px; font-size: 16px; font-weight: 700; color: #5A4A42; cursor: pointer; transition: all 0.3s ease; font-family: inherit; box-shadow: 0 3px 10px rgba(226, 138, 101, 0.15); }
+        .answer-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(226, 138, 101, 0.25); border-color: #F4A47C; }
+        .answer-btn.correct { background: linear-gradient(135deg, #90EE90, #98FB98); border-color: #228B22; color: #228B22; animation: correctPulse 0.5s ease; }
+        .answer-btn.wrong { background: linear-gradient(135deg, #FFB6C1, #FFC0CB); border-color: #DC143C; color: #DC143C; animation: shake 0.5s ease; }
+        @keyframes correctPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        .feedback { background: white; border-radius: 15px; padding: 20px; margin-top: 20px; display: none; animation: slideIn 0.3s ease; }
+        .feedback.show { display: block; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .feedback-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 18px; font-weight: 800; }
+        .feedback.correct .feedback-header { color: #228B22; }
+        .feedback.wrong .feedback-header { color: #DC143C; }
+        .feedback-text { color: #5A4A42; line-height: 1.6; font-size: 15px; }
+        .feedback-rule { background: linear-gradient(135deg, #FFF5ED, #FFE5D0); padding: 10px 15px; border-radius: 10px; margin-top: 10px; font-size: 14px; color: #8B6F5C; border-left: 3px solid #E28A65; }
+        .next-btn { width: 100%; background: linear-gradient(135deg, #E28A65, #D4756C); color: white; border: none; padding: 18px; border-radius: 15px; font-size: 18px; font-weight: 800; cursor: pointer; transition: all 0.3s ease; font-family: inherit; margin-top: 20px; box-shadow: 0 5px 20px rgba(226, 138, 101, 0.3); display: none; }
+        .next-btn.show { display: block; animation: slideIn 0.3s ease; }
+        .next-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(226, 138, 101, 0.4); }
+        .start-screen, .difficulty-screen { text-align: center; padding: 20px 0; }
+        .start-screen h1, .difficulty-screen h2 { font-size: 32px; color: #E28A65; margin-bottom: 15px; font-weight: 800; }
+        .start-screen p, .difficulty-screen p { color: #8B6F5C; font-size: 16px; margin-bottom: 30px; line-height: 1.6; }
+        .feature-list { text-align: left; background: linear-gradient(135deg, #FFF9F5, #FFF5ED); padding: 20px; border-radius: 15px; margin-bottom: 30px; }
+        .feature-list li { padding: 8px 0; color: #5A4A42; list-style: none; display: flex; align-items: center; gap: 10px; }
+        .feature-list li::before { content: '✨'; }
+        .start-btn, .diff-btn { background: linear-gradient(135deg, #E28A65, #D4756C); color: white; border: none; padding: 15px 30px; border-radius: 25px; font-size: 16px; font-weight: 800; cursor: pointer; transition: all 0.3s ease; font-family: inherit; box-shadow: 0 5px 20px rgba(226, 138, 101, 0.3); margin: 8px; }
+        .start-btn:hover, .diff-btn:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 8px 30px rgba(226, 138, 101, 0.4); }
+        .diff-btn.easy { background: linear-gradient(135deg, #90EE90, #98FB98); color: #228B22; }
+        .diff-btn.medium { background: linear-gradient(135deg, #F4A47C, #E28A65); }
+        .diff-btn.hard { background: linear-gradient(135deg, #DC143C, #B22222); }
+        .diff-btn.selected { transform: scale(1.1); box-shadow: 0 0 0 4px #FFF, 0 8px 25px rgba(0,0,0,0.2); }
+        .results-screen { text-align: center; padding: 20px 0; display: none; }
+        .results-screen.show { display: block; }
+        .trophy { font-size: 80px; margin-bottom: 20px; }
+        .final-score { font-size: 48px; font-weight: 800; color: #E28A65; margin-bottom: 10px; }
+        .results-message { color: #8B6F5C; font-size: 18px; margin-bottom: 30px; }
+        .badges { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; }
+        .badge { background: linear-gradient(135deg, #FFF5ED, #FFE5D0); padding: 10px 20px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-weight: 700; color: #E28A65; font-size: 14px; }
+        .hidden { display: none !important; }
+        .difficulty-indicator { background: #FFF5ED; padding: 5px 12px; border-radius: 12px; font-weight: 700; font-size: 13px; color: #8B6F5C; }
+        @media (max-width: 600px) {
+            .answers-grid { grid-template-columns: 1fr; }
+            .game-container { padding: 20px; }
+            .header { flex-direction: column; gap: 15px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <svg width="0" height="0" style="position:absolute">
+            <defs>
+                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#E28A65;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#F4A47C;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+        </svg>
+
+        <div class="progress-path">
+            <svg class="progress-svg" viewBox="0 0 300 80">
+                <path class="progress-path-line" d="M 10 70 Q 150 10 290 70" />
+                <path class="progress-path-fill" id="progressFill" d="M 10 70 Q 150 10 290 70" />
+                <circle cx="10" cy="70" r="6" fill="#E28A65" id="progressDot" />
+            </svg>
+        </div>
+
+        <!-- Start Screen -->
+        <div class="start-screen" id="startScreen">
+            <h1>🎮 Modal Quest</h1>
+            <p>Master English modal verbs with negative forms!<br>Perfect for B1 level learners</p>
+            <ul class="feature-list">
+                <li>Positive & negative forms (must/mustn't, should/shouldn't...)</li>
+                <li>Real-life scenarios & error detection</li>
+                <li>Track streaks & earn badges</li>
+                <li>Choose your difficulty level</li>
+            </ul>
+            <button class="start-btn" onclick="showDifficulty()">🚀 Start Quest</button>
+        </div>
+
+        <!-- Difficulty Selection -->
+        <div class="difficulty-screen hidden" id="difficultyScreen">
+            <h2>⚡ Choose Difficulty</h2>
+            <p>Higher difficulty = more points & harder rules!</p>
+            <div style="margin: 20px 0;">
+                <button class="diff-btn easy selected" onclick="selectDifficulty('easy')">🌱 Easy<br><small>Basic forms, 1x points</small></button>
+                <button class="diff-btn medium" onclick="selectDifficulty('medium')">🔥 Medium<br><small>Mixed forms, 2x points</small></button>
+                <button class="diff-btn hard" onclick="selectDifficulty('hard')">💎 Hard<br><small>Advanced, 3x points, strict streak</small></button>
+            </div>
+            <button class="start-btn" onclick="startGame()">✅ Confirm & Play</button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div class="quiz-screen hidden" id="quizScreen">
+            <div class="header">
+                <div class="logo">🎯 Modal Quest</div>
+                <div class="stats">
+                    <span class="difficulty-indicator" id="diffBadge">🌱 Easy</span>
+                    <div class="stat-item">🔥 <span id="streak">0</span></div>
+                    <div class="stat-item">⭐ <span id="score">0</span></div>
+                </div>
+            </div>
+            <div class="avatar-container">
+                <div class="avatar">👦</div>
+                <div class="avatar-name">Player</div>
+            </div>
+            <div class="question-card">
+                <span class="question-type" id="questionType">Choose the Modal</span>
+                <div class="question-text" id="questionText">Which sentence is correct?</div>
+                <div class="question-context" id="questionContext"></div>
+                <div class="sentence-box" id="sentenceBox"></div>
+            </div>
+            <div class="answers-grid" id="answersGrid"></div>
+            <div class="feedback" id="feedback">
+                <div class="feedback-header" id="feedbackHeader"></div>
+                <div class="feedback-text" id="feedbackText"></div>
+                <div class="feedback-rule" id="feedbackRule"></div>
+            </div>
+            <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Next Question →</button>
+        </div>
+
+        <!-- Results Screen -->
+        <div class="results-screen" id="resultsScreen">
+            <div class="trophy">🏆</div>
+            <div class="final-score" id="finalScore">0 pts</div>
+            <div class="results-message" id="resultsMessage">Great job!</div>
+            <div class="badges" id="badges"></div>
+            <button class="start-btn" onclick="restartGame()">🔄 Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Game Data with Difficulty Tags & Negative Forms
+        const allQuestions = [
+            { type: "Choose the Modal", question: "Which modal verb is correct?", context: "Talking about prohibition", sentence: "You ___ smoke in the hospital. It's strictly forbidden!", answers: ["mustn't", "don't have to", "shouldn't", "can"], correct: 0, explanation: "Mustn't expresses strong prohibition - something that is NOT allowed.", rule: " MUSTN'T = prohibition (it's forbidden)", difficulty: "easy" },
+            { type: "Positive or Negative?", question: "Choose the correct form:", context: "Giving advice", sentence: "You look tired. You ___ go to bed so late every night.", answers: ["should", "shouldn't", "must", "don't have to"], correct: 1, explanation: "Shouldn't is used to give negative advice - telling someone what is NOT a good idea.", rule: "📌 SHOULDN'T = negative advice (it's not a good idea)", difficulty: "easy" },
+            { type: "Error Detective", question: "Find the mistake:", context: "Ability in the past", sentence: "She can't swimming when she was five.", answers: ["can't → couldn't", "swimming → swim", "Both A and B", "No mistake"], correct: 2, explanation: "For past ability, use 'couldn't' (not can't), and after modals we use the base form 'swim'.", rule: "📌 COULDN'T + base verb (for past inability)", difficulty: "hard" },
+            { type: "Real-Life Scenario", question: "What would you say?", context: "At school - talking about rules", sentence: "The teacher says: 'Students ___ use phones during the exam.'", answers: ["mustn't", "don't have to", "couldn't", "shouldn't"], correct: 0, explanation: "Mustn't is used for official rules and strong prohibitions, especially in formal situations.", rule: " MUSTN'T = official prohibition (rules, laws)", difficulty: "medium" },
+            { type: "Dialogue Builder", question: "Complete the dialogue:", context: "Friends making plans", sentence: "A: ___ I borrow your notes?<br>B: Sorry, I ___ find them anywhere!", answers: ["Can / can't", "Could / mustn't", "May / shouldn't", "Must / couldn't"], correct: 0, explanation: "Can is used for informal requests. Can't expresses inability in the present.", rule: "📌 CAN (request) / CAN'T (inability)", difficulty: "easy" },
+            { type: "Choose the Modal", question: "Which is correct?", context: "Lack of necessity", sentence: "Tomorrow is a holiday, so we ___ wake up early.", answers: ["mustn't", "don't have to", "shouldn't", "couldn't"], correct: 1, explanation: "Don't have to means there is NO necessity - it's not required, but you can if you want.", rule: "📌 DON'T HAVE TO = no necessity (optional)", difficulty: "medium" },
+            { type: "Gap Fill", question: "Fill in the blank:", context: "Health advice", sentence: "You ___ eat so much junk food. It's bad for your health!", answers: ["mustn't", "shouldn't", "don't have to", "couldn't"], correct: 1, explanation: "Shouldn't is perfect for giving negative advice about habits and health.", rule: "📌 SHOULDN'T = advice against something", difficulty: "easy" },
+            { type: "Real-Life Scenario", question: "What's the rule?", context: "At the library", sentence: "You ___ talk loudly in the library. It's a quiet zone!", answers: ["mustn't", "don't have to", "shouldn't", "couldn't"], correct: 0, explanation: "Mustn't is used for strict rules in public places like libraries.", rule: " MUSTN'T = strict rule (public places)", difficulty: "medium" },
+            { type: "Past Ability", question: "Choose the correct form:", context: "Talking about childhood", sentence: "I ___ ride a bike when I was 4 years old.", answers: ["can", "could", "couldn't", "can't"], correct: 1, explanation: "Could is used for general ability in the past. Couldn't would mean inability.", rule: " COULD = past ability / COULDN'T = past inability", difficulty: "hard" },
+            { type: "Mixed Practice", question: "Which sentence is CORRECT?", context: "Review all forms", sentence: "Choose the grammatically correct sentence:", answers: ["She must to study harder.", "You shouldn't to eat that.", "He can plays guitar.", "We don't have to go today."], correct: 3, explanation: "Don't have to is correct! Modals (must, should, can) are followed by base verb WITHOUT 'to'.", rule: "📌 Modal + base verb (NO 'to') | Have to + base verb (WITH 'to')", difficulty: "hard" }
+        ];
+
+        // Difficulty Settings
+        const difficultySettings = {
+            easy: { multiplier: 1, streakBonus: 1, label: "🌱 Easy", color: "#90EE90", filter: ["easy"] },
+            medium: { multiplier: 2, streakBonus: 2, label: "🔥 Medium", color: "#F4A47C", filter: ["easy", "medium"] },
+            hard: { multiplier: 3, streakBonus: 3, label: "💎 Hard", color: "#DC143C", filter: ["easy", "medium", "hard"], strictStreak: true }
+        };
+
+        let selectedDifficulty = 'easy';
+        let currentQuestion = 0;
+        let score = 0;
+        let streak = 0;
+        let answered = false;
+        let gameQuestions = [];
+
+        // DOM Elements
+        const startScreen = document.getElementById('startScreen');
+        const difficultyScreen = document.getElementById('difficultyScreen');
+        const quizScreen = document.getElementById('quizScreen');
+        const resultsScreen = document.getElementById('resultsScreen');
+        const questionType = document.getElementById('questionType');
+        const questionText = document.getElementById('questionText');
+        const questionContext = document.getElementById('questionContext');
+        const sentenceBox = document.getElementById('sentenceBox');
+        const answersGrid = document.getElementById('answersGrid');
+        const feedback = document.getElementById('feedback');
+        const feedbackHeader = document.getElementById('feedbackHeader');
+        const feedbackText = document.getElementById('feedbackText');
+        const feedbackRule = document.getElementById('feedbackRule');
+        const nextBtn = document.getElementById('nextBtn');
+        const streakDisplay = document.getElementById('streak');
+        const scoreDisplay = document.getElementById('score');
+        const progressFill = document.getElementById('progressFill');
+        const progressDot = document.getElementById('progressDot');
+        const diffBadge = document.getElementById('diffBadge');
+
+        function showDifficulty() {
+            startScreen.classList.add('hidden');
+            difficultyScreen.classList.remove('hidden');
+        }
+
+        function selectDifficulty(level) {
+            selectedDifficulty = level;
+            document.querySelectorAll('.diff-btn').forEach(btn => btn.classList.remove('selected'));
+            document.querySelector(`.diff-btn.${level}`).classList.add('selected');
+        }
+
+        function startGame() {
+            difficultyScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            
+            // Filter & shuffle questions based on difficulty
+            const allowed = difficultySettings[selectedDifficulty].filter;
+            gameQuestions = allQuestions.filter(q => allowed.includes(q.difficulty));
+            // Shuffle
+            gameQuestions.sort(() => Math.random() - 0.5);
+            
+            currentQuestion = 0;
+            score = 0;
+            streak = 0;
+            diffBadge.textContent = difficultySettings[selectedDifficulty].label;
+            diffBadge.style.color = difficultySettings[selectedDifficulty].color;
+            diffBadge.style.background = `${difficultySettings[selectedDifficulty].color}20`;
+            
+            updateStats();
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            answered = false;
+            const q = gameQuestions[currentQuestion];
+            questionType.textContent = q.type;
+            questionText.textContent = q.question;
+            questionContext.textContent = q.context;
+            sentenceBox.innerHTML = q.sentence;
+            answersGrid.innerHTML = '';
+            
+            q.answers.forEach((answer, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'answer-btn';
+                btn.textContent = answer;
+                btn.onclick = () => checkAnswer(index, btn);
+                answersGrid.appendChild(btn);
+            });
+            
+            feedback.classList.remove('show', 'correct', 'wrong');
+            nextBtn.classList.remove('show');
+            updateProgress();
+        }
+
+        function checkAnswer(selectedIndex, btn) {
+            if (answered) return;
+            answered = true;
+            const q = gameQuestions[currentQuestion];
+            const isCorrect = selectedIndex === q.correct;
+            const buttons = answersGrid.querySelectorAll('.answer-btn');
+            const settings = difficultySettings[selectedDifficulty];
+            
+            buttons.forEach((button, index) => {
+                button.disabled = true;
+                if (index === q.correct) button.classList.add('correct');
+                else if (index === selectedIndex && !isCorrect) button.classList.add('wrong');
+            });
+            
+            if (isCorrect) {
+                score += settings.multiplier;
+                streak += settings.streakBonus;
+                showFeedback(true, q);
+            } else {
+                if (settings.strictStreak) streak = 0; // Hard mode: reset streak on wrong
+                else streak = Math.max(0, streak - 1);
+                showFeedback(false, q);
+            }
+            
+            updateStats();
+            nextBtn.classList.add('show');
+        }
+
+        function showFeedback(isCorrect, question) {
+            feedback.classList.remove('correct', 'wrong');
+            feedback.classList.add('show', isCorrect ? 'correct' : 'wrong');
+            feedbackHeader.innerHTML = isCorrect ? '✅ Correct!' : '❌ Not quite!';
+            feedbackText.textContent = question.explanation;
+            feedbackRule.textContent = question.rule;
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion < gameQuestions.length) loadQuestion();
+            else showResults();
+        }
+
+        function updateStats() {
+            scoreDisplay.textContent = score;
+            streakDisplay.textContent = streak;
+        }
+
+        function updateProgress() {
+            const progress = (currentQuestion / gameQuestions.length) * 100;
+            const offset = 283 - (283 * progress / 100);
+            progressFill.style.strokeDashoffset = offset;
+            const dotX = 10 + (280 * progress / 100);
+            progressDot.setAttribute('cx', dotX);
+        }
+
+        function showResults() {
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.add('show');
+            document.getElementById('finalScore').textContent = `${score} pts`;
+            
+            const maxPossible = gameQuestions.length * difficultySettings[selectedDifficulty].multiplier;
+            const percent = Math.round((score / maxPossible) * 100);
+            let message = '';
+            let badges = [];
+            
+            if (percent === 100) { message = '🌟 Perfect! Modal Master!'; badges = ['🏆 Perfect', '🔥 On Fire', '🧠 Guru']; }
+            else if (percent >= 80) { message = '🎉 Excellent! Almost flawless!'; badges = ['⭐ High Scorer', '🔥 Streak Pro']; }
+            else if (percent >= 60) { message = '👍 Solid work! Keep leveling up!'; badges = ['📚 Learner', '💪 Persistent']; }
+            else { message = '💪 Great effort! Review & try again!'; badges = ['🌱 Growing']; }
+            
+            if (streak >= 5) badges.push('🔥 5+ Streak');
+            if (selectedDifficulty === 'hard' && percent >= 70) badges.push('💎 Hard Mode Hero');
+            
+            document.getElementById('resultsMessage').textContent = message;
+            const badgesContainer = document.getElementById('badges');
+            badgesContainer.innerHTML = '';
+            badges.forEach(b => {
+                const el = document.createElement('div');
+                el.className = 'badge';
+                el.textContent = b;
+                badgesContainer.appendChild(el);
+            });
+        }
+
+        function restartGame() {
+            resultsScreen.classList.remove('show');
+            startScreen.classList.remove('hidden');
+        }
+
+        // Initialize progress
+        updateProgress();
+    </script>
+</body>
+</html>
